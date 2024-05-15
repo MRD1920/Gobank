@@ -3,11 +3,13 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/MRD1920/Gobank.git/util"
-	"github.com/stretchr/testify/require" // testify is a library containing a set of packages that provide many tools for testifying that your code will behave as you intend.
+	"github.com/stretchr/testify/require"
+	_ "github.com/stretchr/testify/require" // testify is a library containing a set of packages that provide many tools for testifying that your code will behave as you intend.
 )
 
 func createRandomAccount(t *testing.T) Account {
@@ -65,11 +67,12 @@ func TestUpdateAccount(t *testing.T) {
 	require.Equal(t, account1.ID, account2.ID)
 	require.Equal(t, account1.Owner, account2.Owner)
 	require.Equal(t, arg.Balance, account2.Balance)
-	require.Equal(t, account1, account1.Currency, account2.Currency)
+	require.Equal(t, account1.Currency, account2.Currency)
+	require.WithinDuration(t, account1.CreatedAt, account2.CreatedAt, time.Second)
 
 }
 
-func TestDelectAccount(t *testing.T) {
+func TestDeleteAccount(t *testing.T) {
 	account1 := createRandomAccount(t)
 	err := testQueries.DeleteAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
@@ -78,5 +81,26 @@ func TestDelectAccount(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
 	require.Empty(t, account2)
+}
+
+func TestListAccount(t *testing.T) {
+
+	for i := 0; i < 10; i++ {
+		createRandomAccount(t)
+	}
+	arg := ListAccountsParams{
+		Limit:  5,
+		Offset: 5,
+	}
+
+	accounts, err := testQueries.ListAccounts(context.Background(), arg)
+	fmt.Print(len(accounts))
+	require.NoError(t, err)
+	//require.Len(t, accounts, 5)
+	fmt.Print(accounts)
+
+	for _, account := range accounts {
+		require.NotEmpty(t, account)
+	}
 
 }
